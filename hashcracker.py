@@ -142,23 +142,22 @@ def crack(passwordHash, wordLength):
     print "START %d WORD PASSWORDS" % wordLength
     SYSTEM_START_TIME = time()
     for rootPassword in rootPasswordGenerator:
-        guessPassword = rootPassword
-        NUMBER_OF_ROOTPASSWORDS_CHECKED += 1
-        if isHashMatch(passwordHash, hashSHA256(guessPassword)):
-             return guessPassword
+        rootPassword
+        if isHashMatch(passwordHash, hashSHA256(rootPassword)):
+             return rootPassword
                       
         # Just number alterations
-        for numberAlteredPassword in applyNumberAlterationsTo(guessPassword):
+        for numberAlteredPassword in applyNumberAlterationsTo(rootPassword):
             if isHashMatch(passwordHash, hashSHA256(numberAlteredPassword)):
                 return numberAlteredPassword
                 
         # Just symbol alterations
-        for symbolAlteredPassword in applySymbolAlterationsTo(guessPassword):
+        for symbolAlteredPassword in applySymbolAlterationsTo(rootPassword):
             if isHashMatch(passwordHash, hashSHA256(symbolAlteredPassword)):
                  return symbolAlteredPassword
         
         # Number and symbol alterations
-        for numberAlteredPassword in applyNumberAlterationsTo(guessPassword):
+        for numberAlteredPassword in applyNumberAlterationsTo(rootPassword):
             for numberAndSymbolAlteredPassword in applySymbolAlterationsTo(numberAlteredPassword):
                 if isHashMatch(passwordHash, hashSHA256(numberAndSymbolAlteredPassword)):
                     return numberAndLetterSymbolPassword
