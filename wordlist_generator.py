@@ -38,13 +38,13 @@ def sort(wordlist):
             ordered_wordlist.append(current_word)
     return ordered_wordlist
 
-def write(list):
-    with open('wordlist.txt', 'a') as file:
+def write(list, name='wordlist.txt'):
+    with open(name, 'a') as file:
         file.write("WORD -- OCCURENCES\n")
         for key_value_pair in list: 
             file.write("%s %d\n" % (key_value_pair[0], key_value_pair[1]))
     
 ordered_wordlist = []
-key_value_pairs = generateWordlistFrom("books/thejungle.txt").items()
+key_value_pairs = generateWordlistFrom("books/shakespeare.txt").items()
 ordered_wordlist = sort(key_value_pairs)
-write(ordered_wordlist)
+write(ordered_wordlist, "wordlist_files/shakespeare_wordlist.txt")
