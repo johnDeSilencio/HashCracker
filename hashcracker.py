@@ -15,24 +15,30 @@ def printStatistics():
     statistics = "# Hashes: %0.f HPS: %0.f # Root Passwords Checked: %0.f RPCPS: %0.f" % (NUMBER_OF_HASHES, hashesPerSecond, NUMBER_OF_ROOTPASSWORDS_CHECKED, rootPasswordChecksPerSecond)
     print statistics,
     sys.stdout.flush()
-    print (b'\x08').decode()*5*len(statistics),
+    print '\r'*5*len(statistics),
 
 def getRootPasswordChecksPerSecond():
     global NUMBER_OF_ROOTPASSWORDS_CHECKED
     global SYSTEM_CURRENT_TIME 
     global SYSTEM_START_TIME
     SYSTEM_CURRENT_TIME = time()
-    return NUMBER_OF_ROOTPASSWORDS_CHECKED / (SYSTEM_CURRENT_TIME - SYSTEM_START_TIME)
+    try:
+        return NUMBER_OF_ROOTPASSWORDS_CHECKED / (SYSTEM_CURRENT_TIME - SYSTEM_START_TIME)
+    except ZeroDivisionError:
+        return 0
     
 def getHashesPerSecond():
     global NUMBER_OF_HASHES
     global SYSTEM_CURRENT_TIME 
     global SYSTEM_START_TIME
     SYSTEM_CURRENT_TIME = time()
-    return NUMBER_OF_HASHES / (SYSTEM_CURRENT_TIME - SYSTEM_START_TIME)
-
+    try:
+        return NUMBER_OF_HASHES / (SYSTEM_CURRENT_TIME - SYSTEM_START_TIME)
+    except ZeroDivisionError:
+        return 0
+    
 def getWordlistFile():
-    return open("shorter_wordlist.txt", 'r')
+    return open("wordlist_files/shorter_wordlist.txt", 'r')
 
 def hashSHA256(string):
     global NUMBER_OF_HASHES
@@ -56,39 +62,38 @@ def generateNextOneWordRootPassword():
     wordlist.close()
 
 def generateNextTwoWordRootPassword():
-    wordlist = getWordlistFile()
     rootPassword = ""
     
-    for second_word in wordlist:
-        for first_word in wordlist:
-            # [:-1] removes the trailing newline in the word
-            rootPassword = first_word[:-1] + second_word[:-1]
+    first_wordlist = getWordlistFile()
+    for first_word_with_newline in first_wordlist:
+        first_word = first_word_with_newline[:-1]
+        second_wordlist = getWordlistFile()
+        for second_word_with_newline in second_wordlist:
+            second_word = second_word_with_newline[:-1]
+            rootPassword = first_word + second_word
             yield rootPassword
-            # [:-1] removes the trailing newline in the word
-            rootPassword = first_word[:-1].capitalize() + second_word[:-1].capitalize()
-            yield rootPassword
-            # [:-1] removes the trailing newline in the word
-            rootPassword = first_word[:-1] + "_" + second_word[:-1]
-            yield rootPassword
-    wordlist.close()
+            yield rootPassword.capitalize()
+        second_wordlist.close()
+    first_wordlist.close()
 
 def generateNextThreeWordRootPassword():
-    wordlist = getWordlistFile()
     rootPassword = ""
 
-    for third_word in wordlist:
-        for second_word in wordlist:
-            for first_word in wordlist:
-                # [:-1] removes the trailing newline in the word
-                rootPassword = first_word[:-1] + second_word[:-1] + third_word[:-1]
+    first_wordlist = getWordlistFile()
+    for first_word_with_newline in first_wordlist:
+        first_word = first_word_with_newline[:-1]
+        second_wordlist = getWordlistFile()
+        for second_word_with_newline in second_wordlist:
+            second_word = second_word_with_newline[:-1]
+            third_wordlist = getWordlistFile()
+            for third_word_with_newline in third_wordlist:
+                third_word = third_word_with_newline[:-1]
+                rootPassword = first_word + second_word + third_word
                 yield rootPassword
-                # [:-1] removes the trailing newline in the word
-                rootPassword = first_word[:-1].capitalize() + second_word[:-1].capitalize() + third_word[:-1].capitalize()
-                yield rootPassword
-                # [:-1] removes the trailing newline in the word
-                rootPassword = first_word[:-1] + "_" + second_word[:-1] + "_" + third_word[:-1]
-                yield rootPassword
-    wordlist.close()
+                yield rootPassword.capitalize()
+            third_wordlist.close()
+        second_wordlist.close()
+    first_wordlist.close()
     
 def applyNumberAlterationsTo(rootPassword):   
     for appendableNumber in xrange(1, 100):
@@ -97,11 +102,8 @@ def applyNumberAlterationsTo(rootPassword):
     for appendableNumber in xrange(1, 21):
         yield rootPassword + "#" + str(appendableNumber)
     
-    for appendableYear in xrange(1900, 2018):
-        yield rootPassword + str(appendableYear)
-    
 def applySymbolAlterationsTo(rootPassword):
-    # Yields all various combinations of:
+    # Yields all various combinations of the following substituions:
     # e -> 3
     # o -> 0
     # s -> $
@@ -161,16 +163,64 @@ def crack(passwordHash, wordLength):
             for numberAndSymbolAlteredPassword in applySymbolAlterationsTo(numberAlteredPassword):
                 if isHashMatch(passwordHash, hashSHA256(numberAndSymbolAlteredPassword)):
                     return numberAndLetterSymbolPassword
-                    
+                               
         NUMBER_OF_ROOTPASSWORDS_CHECKED += 1
         printStatistics()
     print "\nFINISHED %d WORD PASSWORDS" % wordLength
+    NUMBER_OF_HASHES = 0L
+    NUMBER_OF_ROOTPASSWORDS_CHECKED = 0L
     
     return None
     
+def crackAgainstMostCommonPasswords(passwordHash):
+    global NUMBER_OF_ROOTPASSWORDS_CHECKED
+    global NUMBER_OF_HASHES
     
-test_hash = hashSHA256("aardvarkabandon11")
+    commonPasswordFile = open("wordlist_files/10_million_password_list_top_100000.txt", 'r')
+    
+    SYSTEM_START_TIME = time()
+    for password in commonPasswordFile:
+        passwordWithoutNewline = password[:-1]
+        if isHashMatch(passwordHash, hashSHA256(passwordWithoutNewline)):
+            return passwordWithoutNewline
+        NUMBER_OF_ROOTPASSWORDS_CHECKED += 1
+        NUMBER_OF_HASHES += 1
+        if password[0] == 'a':
+            printStatistics()
+    
+    NUMBER_OF_ROOTPASSWORDS_CHECKED = 0
+    NUMBER_OF_HASHES = 0
+    return None
+
+def getSymbolGenerator():
+    symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+={}[]|\\:;'\"<,>.?/"
+    for character in symbols:
+        yield character
+
+def replace(string, replacement, index):
+    return text[:index] + replacement + text[index+1:]
+    
+def bruteForce(passwordHash):
+    global NUMBER_OF_ROOTPASSWORDS_CHECKED
+    global NUMBER_OF_HASHES
+    
+    for passwordLength in xrange(1, 9):
+        characterGenerators = []
+        for character_index in xrange(0, passwordLength):
+            characterGenerator = getSymbolGenerator()
+            characterGenerators.append(characterGenerator)
+    
+        guessPassword = " " * passwordLength
+        
+        for character_index in xrange(0, passwordLength):
+            guessPassword = replace(guessPassword, characterGenerators[character_index].next(), character_index)
+            if isHashMatch(passwordHash, hashSHA256(guessPassword)):
+                    return guessPassword
+    return None
+
+test_hash = hashSHA256("theofficers#13")
 print test_hash
+print crackAgainstMostCommonPasswords(test_hash)
 rootPasswordLength = 1
 print crack(test_hash, rootPasswordLength)
 rootPasswordLength = 2
