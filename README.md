@@ -14,6 +14,9 @@ Root Password: A combination of one or more words either randomly generated or
 socially engineered. The root password serves as the base for all of the alterations
 that will be applied to it.
 
+Alteration: Any change to the root password, which may be adding characters, removing
+characters, or changing characters.
+
 Number Alteration: Any change to the root password that involves appending numbers
 to the beginning or ending of the root password.
 
@@ -22,7 +25,8 @@ to the beginning or ending of the root password, or replacing letters with symbo
 This also includes adding hyphens and underscores to the spaces between letters of
 the root password.
 
-Letter Alteration: Capitalization
+Letter Alteration: Checking capitalization (most often the first character of the
+password).
 
 ----
 
